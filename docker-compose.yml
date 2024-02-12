@@ -1,0 +1,49 @@
+services:
+  rabbitmq:
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
+      RABBITMQ_DEFAULT_USER: "user"
+      RABBITMQ_DEFAULT_PASS: "password"
+      RABBITMQ_DEFAULT_VHOST: "/"
+      CELERY_BROKER_URL: "amqp://user:password@rabbitmq:5672"
+    image: "rabbitmq:3-management-alpine"
+    networks:
+      - django
+    expose:
+      - '5672'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  celery_worker:
+    container_name: celery_worker
+    build: .
+    volumes:
+      - .:/code
+    restart: on-failure
+    command: celery -A filetest.celery worker --loglevel=info -P eventlet
+    networks:
+      - django
+    depends_on:
+      - rabbitmq
+
+  django_app:
+    build: .
+    volumes:
+      - .:/code
+    command: >
+      sh -c "python3 manage.py makemigrations --noinput &&
+      python3 manage.py migrate --noinput &&
+      python3 manage.py runserver 0.0.0.0:8000"
+    networks:
+      - django
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rabbitmq
+
+networks:
+  django:
+    driver: bridge

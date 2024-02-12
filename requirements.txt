@@ -1,0 +1,5 @@
+Django==5.0
+celery==5.3.6
+djangorestframework==3.14.0
+flower==2.0.1
+eventlet==0.35.1
